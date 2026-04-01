@@ -8,6 +8,7 @@ import HomePage from './HomePage';
 import Register from './Register';
 import { Auth } from './Auth';
 import { WorkHub } from './WorkHub';
+import { Signup } from './Signup';
 import { Loader2 } from 'lucide-react';
 
 export default function AppRoutes() {
@@ -16,17 +17,26 @@ export default function AppRoutes() {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
+  const fetchProfile = async (uid: string) => {
+    try {
+      const docRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProfile({ uid: docSnap.id, ...docSnap.data() } as UserProfile);
+      } else {
+        setProfile(null);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
       if (firebaseUser) {
-        setUser(firebaseUser);
-        const docRef = doc(db, 'users', firebaseUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        }
+        await fetchProfile(firebaseUser.uid);
       } else {
-        setUser(null);
         setProfile(null);
       }
       setLoading(false);
@@ -51,8 +61,12 @@ export default function AppRoutes() {
       <Route 
         path="/hub" 
         element={
-          user && profile ? (
-            <WorkHub profile={profile} />
+          user ? (
+            profile ? (
+              <WorkHub profile={profile} />
+            ) : (
+              <Signup user={user} onComplete={() => fetchProfile(user.uid)} />
+            )
           ) : (
             <Navigate to="/login" state={{ from: location }} replace />
           )

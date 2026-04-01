@@ -66,12 +66,22 @@ export function JobDetail({ job, onBack, userProfile }: JobDetailProps) {
 
       {isScammy && <AntiScamBanner />}
 
-      <div className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-[3rem] p-8 md:p-12 shadow-2xl">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{job.title}</h1>
-            <p className="text-xl text-blue-600 font-bold">{job.employerName}</p>
-          </div>
+      <div className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-[3rem] shadow-2xl overflow-hidden">
+        <div className="w-full h-64 overflow-hidden bg-slate-100">
+          <img 
+            src={job.bannerUrl || `https://picsum.photos/seed/${job.id}/1200/600`} 
+            alt={job.title} 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        
+        <div className="p-8 md:p-12">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
+            <div>
+              <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{job.title}</h1>
+              <p className="text-xl text-blue-600 font-bold">{job.employerName}</p>
+            </div>
           
           {userProfile?.role === 'employee' && (
             <button 
@@ -178,5 +188,6 @@ export function JobDetail({ job, onBack, userProfile }: JobDetailProps) {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

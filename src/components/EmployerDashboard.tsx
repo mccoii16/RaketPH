@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, Job, Application } from '../types';
-import { Search, MapPin, Briefcase, Award, ShieldCheck, MessageSquare, User, X, Plus, Send, Sparkles, Eye, CheckCircle2, Clock, Filter, Users, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Briefcase, Award, ShieldCheck, MessageSquare, User, X, Plus, Send, Sparkles, Eye, CheckCircle2, Clock, Filter, Users, ArrowRight, Edit2, Trash2, ShieldAlert } from 'lucide-react';
+import { JobCard, AntiScamBanner } from './JobCard';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 import { getOrCreateConversation } from './Messaging';
@@ -20,6 +21,7 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<UserProfile | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showPostJob, setShowPostJob] = useState(false);
+  const [postJobBanner, setPostJobBanner] = useState<string | null>(null);
 
   // Fetch Candidates (Employees)
   useEffect(() => {
@@ -109,10 +111,23 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
       salaryRange: formData.get('salary') as string,
       cultureTags: (formData.get('tags') as string).split(',').map(t => t.trim()),
       requiredSkills: (formData.get('skills') as string).split(',').map(t => t.trim()),
+      bannerUrl: postJobBanner,
       createdAt: new Date().toISOString()
     };
     await addDoc(collection(db, 'jobs'), newJob);
     setShowPostJob(false);
+    setPostJobBanner(null);
+  };
+
+  const handlePostJobBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPostJobBanner(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleUpdateProfilePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,37 +319,33 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              {myJobs.length === 0 ? (
-                <div className="glass-card p-20 text-center text-slate-500">
-                  <Briefcase size={48} className="mx-auto mb-4 opacity-10" />
-                  <p className="text-xl font-medium">You haven't posted any jobs yet.</p>
-                </div>
-              ) : (
-                myJobs.map(job => (
-                  <div key={job.id} className="glass-card p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                      <h3 className="text-2xl font-black mb-2">{job.title}</h3>
-                      <div className="flex gap-4 text-sm text-slate-400">
-                        <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location}</span>
-                        <span className="flex items-center gap-1.5"><Clock size={14} /> {formatDistanceToNow(new Date(job.createdAt))} ago</span>
-                        <span className="flex items-center gap-1.5 text-indigo-400 font-bold">
-                          <Users size={14} /> {applications.filter(a => a.jobId === job.id).length} Applicants
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={() => setActiveTab('applicants')}
-                        className="px-6 py-3 glass-card text-indigo-400 font-bold hover:bg-indigo-500/10 transition-all"
-                      >
-                        View Applicants
-                      </button>
-                    </div>
+              <div className="grid grid-cols-1 gap-6">
+                {myJobs.length === 0 ? (
+                  <div className="glass-card p-20 text-center text-slate-500">
+                    <Briefcase size={48} className="mx-auto mb-4 opacity-10" />
+                    <p className="text-xl font-medium">You haven't posted any jobs yet.</p>
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  myJobs.map(job => (
+                    <JobCard 
+                      key={job.id}
+                      job={job}
+                      isScammy={job.description.toLowerCase().includes('telegram') || job.description.toLowerCase().includes('processing fee')}
+                      actions={
+                        <div className="flex gap-4">
+                          <button 
+                            onClick={() => setActiveTab('applicants')}
+                            className="px-6 py-3 glass-card text-indigo-400 font-bold hover:bg-indigo-500/10 transition-all flex items-center gap-2"
+                          >
+                            <Users size={18} />
+                            View Applicants ({applications.filter(a => a.jobId === job.id).length})
+                          </button>
+                        </div>
+                      }
+                    />
+                  ))
+                )}
+              </div>
           </motion.section>
         ) : (
           <motion.section 
@@ -548,6 +559,36 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
               
               <form className="space-y-6" onSubmit={handlePostJob}>
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Job Banner</label>
+                    <div className="relative group">
+                      {postJobBanner ? (
+                        <div className="relative w-full h-32 rounded-2xl overflow-hidden border-2 border-indigo-500/30">
+                          <img 
+                            src={postJobBanner} 
+                            alt="Job Banner" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setPostJobBanner(null)}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-xl hover:scale-110 transition-transform"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-32 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 hover:border-indigo-500/30 transition-all">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <Sparkles size={20} className="text-indigo-400 mb-1" />
+                            <p className="text-[10px] font-bold text-slate-400">Click to upload banner</p>
+                          </div>
+                          <input type="file" className="hidden" accept="image/*" onChange={handlePostJobBannerUpload} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
                   <input name="title" required placeholder="Job Title" className="glass-input w-full" />
                   <textarea name="description" required placeholder="Job Description" rows={4} className="glass-input w-full" />
                   <div className="grid grid-cols-2 gap-4">

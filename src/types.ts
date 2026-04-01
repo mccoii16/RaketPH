@@ -44,6 +44,7 @@ export interface Job {
   cultureTags: string[];
   requiredSkills: string[];
   requiresVideoIntro?: boolean;
+  bannerUrl?: string;
   createdAt: string;
 }
 

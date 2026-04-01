@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
-import { Tag, Plus, X, ArrowLeft, Send } from 'lucide-react';
+import { Tag, Plus, X, ArrowLeft, Send, Image as ImageIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface PostJobProps {
@@ -19,6 +19,7 @@ export function PostJob({ userProfile, onBack, onSuccess }: PostJobProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
   const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const cultureTags = [
@@ -41,6 +42,17 @@ export function PostJob({ userProfile, onBack, onSuccess }: PostJobProps) {
     );
   };
 
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
@@ -59,6 +71,7 @@ export function PostJob({ userProfile, onBack, onSuccess }: PostJobProps) {
         salaryRange,
         cultureTags: selectedTags,
         requiredSkills,
+        bannerUrl,
         createdAt: new Date().toISOString()
       });
       onSuccess();
@@ -83,6 +96,40 @@ export function PostJob({ userProfile, onBack, onSuccess }: PostJobProps) {
         <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tight">Post a New Job</h2>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          <div>
+            <label className="block text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Job Banner (Logo, Team, or Brand Image)</label>
+            <div className="relative group">
+              {bannerUrl ? (
+                <div className="relative w-full h-48 rounded-3xl overflow-hidden border-2 border-blue-500/30">
+                  <img 
+                    src={bannerUrl} 
+                    alt="Job Banner" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setBannerUrl(null)}
+                    className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-xl hover:scale-110 transition-transform"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-48 bg-white/60 border-2 border-dashed border-white/40 rounded-3xl cursor-pointer hover:bg-white/80 hover:border-blue-500/30 transition-all">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <div className="p-4 bg-blue-50 rounded-2xl text-blue-600 mb-3">
+                      <ImageIcon size={32} />
+                    </div>
+                    <p className="text-sm font-bold text-gray-600">Click to upload banner</p>
+                    <p className="text-xs text-gray-400 mt-1">PNG, JPG or WEBP (Recommended: 1200x400)</p>
+                  </div>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleBannerUpload} />
+                </label>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Job Title</label>
             <input 

@@ -239,20 +239,31 @@ export function HiringHub({ profile }: HiringHubProps) {
                 <button
                   key={job.id}
                   onClick={() => setSelectedJob(job)}
-                  className={`w-full text-left glass-card p-6 transition-all border-2 ${
+                  className={`w-full text-left glass-card overflow-hidden transition-all border-2 group ${
                     selectedJob?.id === job.id ? 'border-indigo-500 glow-indigo' : 'border-white/5 hover:border-white/10'
                   }`}
                 >
-                  <h3 className="text-xl font-bold mb-2">{job.title}</h3>
-                  <div className="flex items-center gap-4 text-sm text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={14} />
-                      {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <DollarSign size={14} />
-                      {job.salaryRange}
-                    </span>
+                  <div className="h-24 w-full overflow-hidden relative">
+                    <img 
+                      src={job.bannerUrl || `https://picsum.photos/seed/${job.id}/800/400`} 
+                      alt={job.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{job.title}</h3>
+                    <div className="flex items-center gap-4 text-sm text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={14} />
+                        {job.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign size={14} />
+                        {job.salaryRange}
+                      </span>
+                    </div>
                   </div>
                 </button>
               ))
@@ -537,6 +548,7 @@ function PostJobForm({ profile, onComplete }: { profile: UserProfile, onComplete
   const [salaryRange, setSalaryRange] = useState('₱30,000 - ₱50,000');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [requiresVideoIntro, setRequiresVideoIntro] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const cultureTags = ['#HMO', '#13thMonth', '#FlexiTime', '#NoTimeTracker', '#GovernmentBenefits'];
@@ -545,6 +557,17 @@ function PostJobForm({ profile, onComplete }: { profile: UserProfile, onComplete
     setSelectedTags(prev => 
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -561,6 +584,7 @@ function PostJobForm({ profile, onComplete }: { profile: UserProfile, onComplete
         cultureTags: selectedTags,
         requiredSkills: [],
         requiresVideoIntro,
+        bannerUrl,
         createdAt: new Date().toISOString()
       });
       onComplete();
@@ -574,6 +598,40 @@ function PostJobForm({ profile, onComplete }: { profile: UserProfile, onComplete
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <h2 className="text-3xl font-black mb-8">Post RaketPH Opportunity</h2>
+      
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-slate-400 ml-2">Job Banner (Logo, Team, or Brand Image)</label>
+        <div className="relative group">
+          {bannerUrl ? (
+            <div className="relative w-full h-40 rounded-2xl overflow-hidden border-2 border-indigo-500/30">
+              <img 
+                src={bannerUrl} 
+                alt="Job Banner" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <button 
+                type="button"
+                onClick={() => setBannerUrl(null)}
+                className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full shadow-xl hover:scale-110 transition-transform"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 hover:border-indigo-500/30 transition-all">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400 mb-2">
+                  <Sparkles size={24} />
+                </div>
+                <p className="text-xs font-bold text-slate-400">Click to upload banner</p>
+              </div>
+              <input type="file" className="hidden" accept="image/*" onChange={handleBannerUpload} />
+            </label>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-2">
         <label className="text-sm font-bold text-slate-400 ml-2">Job Title</label>
         <input required className="glass-input w-full" value={title} onChange={e => setTitle(e.target.value)} />

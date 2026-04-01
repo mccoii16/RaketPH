@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, arrayUnion, arrayRemove, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, Job, Application } from '../types';
-import { Search, MapPin, DollarSign, Tag, Award, Briefcase, GraduationCap, ShieldCheck, CheckCheck, Clock, ArrowRight, LogOut, User, X, Plus, Send, Sparkles, MessageSquare, Heart, Eye } from 'lucide-react';
+import { Search, MapPin, DollarSign, Tag, Award, Briefcase, GraduationCap, ShieldCheck, CheckCheck, Clock, ArrowRight, LogOut, User, X, Plus, Send, Sparkles, MessageSquare, Heart, Eye, ShieldAlert } from 'lucide-react';
+import { JobCard, AntiScamBanner } from './JobCard';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { logOut } from './Auth';
@@ -356,39 +357,14 @@ export function WorkHub({ profile }: WorkHubProps) {
                       layout
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      onClick={() => setSelectedJob(job)}
-                      className="glass-card p-8 hover:border-indigo-500/50 transition-all cursor-pointer group relative overflow-hidden"
                     >
-                      <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full group-hover:bg-indigo-500/10 transition-colors" />
-                      
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h3 className="text-2xl font-black group-hover:text-indigo-400 transition-colors">{job.title}</h3>
-                          <p className="text-slate-400 font-bold">{job.employerName}</p>
-                        </div>
-                        <button 
-                          onClick={(e) => toggleSaveJob(e, job.id)}
-                          className="p-3 rounded-2xl bg-pink-500/20 text-pink-400 glow-pink transition-all"
-                        >
-                          <Heart size={20} className="fill-pink-400" />
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-8">
-                        <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                          <MapPin size={14} className="text-indigo-400" />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                          <DollarSign size={14} className="text-green-400" />
-                          {job.salaryRange}
-                        </span>
-                      </div>
-
-                      <button className="w-full btn-indigo flex items-center justify-center gap-2 py-4">
-                        View Details
-                        <ArrowRight size={18} />
-                      </button>
+                      <JobCard 
+                        job={job}
+                        onClick={() => setSelectedJob(job)}
+                        isScammy={job.description.toLowerCase().includes('telegram') || job.description.toLowerCase().includes('processing fee')}
+                        isSaved={true}
+                        onToggleSave={(e) => toggleSaveJob(e, job.id)}
+                      />
                     </motion.div>
                   ))}
                 </div>
@@ -427,51 +403,14 @@ export function WorkHub({ profile }: WorkHubProps) {
                       layout
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      onClick={() => setSelectedJob(job)}
-                      className="glass-card p-8 hover:border-indigo-500/50 transition-all cursor-pointer group relative overflow-hidden"
                     >
-                      <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full group-hover:bg-indigo-500/10 transition-colors" />
-                      
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h3 className="text-2xl font-black group-hover:text-indigo-400 transition-colors">{job.title}</h3>
-                          <p className="text-slate-400 font-bold">{job.employerName}</p>
-                        </div>
-                        <button 
-                          onClick={(e) => toggleSaveJob(e, job.id)}
-                          className={`p-3 rounded-2xl transition-all ${
-                            savedJobIds.includes(job.id) 
-                              ? 'bg-pink-500/20 text-pink-400 glow-pink' 
-                              : 'bg-white/5 text-slate-500 hover:bg-white/10'
-                          }`}
-                        >
-                          <Heart size={20} className={savedJobIds.includes(job.id) ? 'fill-pink-400' : ''} />
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-8">
-                        <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                          <MapPin size={14} className="text-indigo-400" />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                          <DollarSign size={14} className="text-green-400" />
-                          {job.salaryRange}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-8">
-                        {job.cultureTags.map(tag => (
-                          <span key={tag} className="px-3 py-1 bg-indigo-500/5 text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      <button className="w-full btn-indigo flex items-center justify-center gap-2 py-4">
-                        View Details
-                        <ArrowRight size={18} />
-                      </button>
+                      <JobCard 
+                        job={job}
+                        onClick={() => setSelectedJob(job)}
+                        isScammy={job.description.toLowerCase().includes('telegram') || job.description.toLowerCase().includes('processing fee')}
+                        isSaved={savedJobIds.includes(job.id)}
+                        onToggleSave={(e) => toggleSaveJob(e, job.id)}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -564,6 +503,16 @@ function JobDetailView({ job, profile, onComplete, isSaved, onToggleSave }: {
 
   return (
     <div className="space-y-12">
+      <div className="w-full h-48 md:h-64 overflow-hidden rounded-[2rem] bg-slate-800 relative">
+        <img 
+          src={job.bannerUrl || `https://picsum.photos/seed/${job.id}/1200/600`} 
+          alt={job.title} 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start gap-8">
         <div>
           <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-2">{job.title}</h2>
