@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    function isValidUser(data) {
+      return data.uid is string && data.displayName is string && data.email is string && data.role in ['employee', 'employer'] &&
+             (!('savedJobs' in data) || data.savedJobs is list);
+    }
+    function isValidJob(data) {
+      return data.employerId is string && data.title is string && data.description is string && data.cultureTags is list && data.requiredSkills is list;
+    }
+    function isValidApplication(data) {
+      return data.jobId is string && data.employeeId is string && data.status in ['pending', 'seen', 'shortlisted', 'rejected'];
+    }
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "Martiligando@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
+    }
+
+    // Jobs collection
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (request.auth.uid == request.resource.data.employerId || isAdmin()) && isValidJob(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.employerId || isAdmin()) && isValidJob(request.resource.data);
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.employerId || isAdmin());
+    }
+
+    // Applications collection
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (request.auth.uid == request.resource.data.employeeId || isAdmin()) && isValidApplication(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.employeeId || request.auth.uid == get(/databases/$(database)/documents/jobs/$(resource.data.jobId)).data.employerId || isAdmin()) && isValidApplication(request.resource.data);
+    }
+
+    // Conversations collection
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isAuthenticated() && (request.auth.uid in request.resource.data.participants || isAdmin());
+      allow update: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
+    }
+
+    // Messages subcollection
+    match /conversations/{conversationId}/messages/{messageId} {
+      allow read: if isAuthenticated() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants || isAdmin());
+      allow create: if isAuthenticated() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants || isAdmin()) && (request.auth.uid == request.resource.data.senderId || isAdmin());
+    }
+  }
+}
